@@ -1,6 +1,8 @@
 #include <proto.h>
 #include <htu21d.h>
 #include <bleprph.h>
+#include <servo.h>
+#include <pid_control.h>
 
 #define I2C_MASTER_SCL_IO           22      /*!< GPIO number used for I2C master clock */
 #define I2C_MASTER_SDA_IO           21      /*!< GPIO number used for I2C master data  */
@@ -10,6 +12,7 @@
 float target_temp = 18.0;
 float curr_temp = NAN;
 float curr_rh = NAN;
+float percent_angle = 0.0;
 
 esp_err_t i2c_init(void) {
     int i2c_master_port = 0;
@@ -41,8 +44,25 @@ static void ble_on_reset(int reason) {
     ESP_LOGE("BLE_EVT", "Resetting state; reason=%d\n", reason);
 }
 
-static void pid_cntrl_loop(void *pvParameter) {
-    
+static void servo_cntrl_loop(void *pvParameter) {
+    float output;
+    int angle;
+    pid_control_t pid = {
+        // Ku = 10, Tu = 0.5
+        .proportional   = 6.0,
+        .integrator     = 24.0,
+        .differentiator = 0.375,
+        .lim_max = 100.0,
+        .lim_min = 0.0,
+        .sampling_time_ms = 500
+    };
+    while (true) {
+        output = pid_compute(&pid, &curr_temp, &target_temp);
+        output = pid_process_output(&pid, output);
+        angle = (int) output * SERVO_MAX_DEGREE / 100;
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(mcpwm_cmpr, angle_to_compare(angle)));
+        vTaskDelay(pid.sampling_time_ms / portTICK_PERIOD_MS);
+    }
 }
 
 static void env_sensing_loop(void *pvParameter) {
@@ -73,6 +93,7 @@ static void ble_notify_loop(void *pvParameter) {
         uint16_t conv_rh = (uint16_t)(curr_rh / (1 * pow(10, -2) * pow(2, 0)));
         om = ble_hs_mbuf_from_flat(&conv_rh, sizeof(conv_rh));
         ble_gatts_notify_custom(conn_handle, rh_val_handle, om);
+        ESP_LOGI("SERVO", "Current Angle : %.2f", percent_angle);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }
@@ -104,16 +125,20 @@ void app_main(void)
     ble_hs_cfg.sync_cb = ble_on_sync;
     ble_hs_cfg.reset_cb = ble_on_reset;
 
+    pwm_init();
+
+
     xTaskCreate(&env_sensing_loop, "env_sensing_loop", 2048, NULL, 5, NULL);
     xTaskCreate(&ble_notify_loop, "ble_notify_loop", 2048, NULL, 5, NULL);
-    
+    xTaskCreate(&servo_cntrl_loop, "servo_cntrl_loop", 2048, NULL, 5, NULL);
+
     rc = gatt_svr_init();
     assert(rc == 0);
 
     /* Set the default device name */
     rc = ble_svc_gap_device_name_set(device_name);
     assert(rc == 0);
-
+    
     /* Start the task */
     nimble_port_freertos_init(ble_host_task);
 

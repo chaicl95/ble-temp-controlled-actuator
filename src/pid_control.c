@@ -1,5 +1,4 @@
-#include <pid.h>
-
+#include <pid_control.h>
 
 float pid_compute(pid_control_t *pid, float *current, float *target) {
     static float prev_error = 0;
@@ -8,9 +7,9 @@ float pid_compute(pid_control_t *pid, float *current, float *target) {
     float error = *target - *current;
 
     p = pid->proportional * error;
-    integral += error * pid->sampling_time;
+    integral += error * (pid->sampling_time_ms * 1000);
     i = pid->integrator * integral;
-    d = pid->differentiator * (error - prev_error)/pid->sampling_time;
+    d = pid->differentiator * (error - prev_error)/(pid->sampling_time_ms * 1000);
     prev_error = error;
     
     return p + i + d;
