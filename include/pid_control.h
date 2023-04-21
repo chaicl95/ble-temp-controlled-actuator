@@ -1,7 +1,5 @@
-#ifndef  PID_CONTROL_H
+#ifndef PID_CONTROL_H
 #define PID_CONTROL_H
-
-#include <proto.h>
 
 typedef struct {
     float proportional;

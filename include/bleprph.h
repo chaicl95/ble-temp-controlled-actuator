@@ -2,6 +2,22 @@
 #define BLEPRPH_H
 
 #include <proto.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <esp_log.h>
+#include <nvs_flash.h>
+#include <host/ble_hs.h>
+#include <host/ble_hs.h>
+#include <host/ble_uuid.h>
+#include <nimble/ble.h>
+#include <nimble/nimble_port.h>
+#include <nimble/nimble_port_freertos.h>
+#include <services/gap/ble_svc_gap.h>
+#include <services/ans/ble_svc_ans.h>
+#include <services/gatt/ble_svc_gatt.h>
+#include <services/gap/ble_svc_gap.h>
+
 
 /* Heart-rate configuration */
 #define GATT_SVC_ENVS_UUID                          0x181A
@@ -15,6 +31,15 @@
 #define GATT_DEVICE_INFO_UUID                       0x180A
 #define GATT_MANUFACTURER_NAME_UUID                 0x2A29
 #define GATT_MODEL_NUMBER_UUID                      0x2A24
+
+struct ble_hs_cfg;
+struct ble_gatt_register_ctxt;
+extern uint8_t blehr_addr_type;
+extern uint16_t target_temp_val_handle;
+extern uint16_t temp_val_handle;
+extern uint16_t rh_val_handle;
+extern uint16_t conn_handle;
+extern bool notify_state;
 
 int ble_gap_event_func(struct ble_gap_event *event, void *arg);
 void ble_advertise(void);

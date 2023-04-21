@@ -1,10 +1,13 @@
 #ifndef HTU21D_H
 #define HTU21D_H
 
-#include <proto.h>
+#include <math.h>
+#include <stdint.h>
+#include <esp_log.h>
+#include <driver/i2c.h>
+#include <freertos/FreeRTOS.h>
 
 #define HTU21D_I2C_ADDRESS                      0x40
-
 #define HTU21D_TEMP_MEASURE_HOLD                0xe3
 #define HTU21D_RH_MEASURE_HOLD                  0xe5
 #define HTU21D_TEMP_MEASURE_NO_HOLD             0xf3

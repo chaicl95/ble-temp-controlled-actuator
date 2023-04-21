@@ -1,7 +1,7 @@
 #include <proto.h>
+#include <servo.h>
 #include <htu21d.h>
 #include <bleprph.h>
-#include <servo.h>
 #include <pid_control.h>
 
 #define I2C_MASTER_SCL_IO           22      /*!< GPIO number used for I2C master clock */
