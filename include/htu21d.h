@@ -1,8 +1,7 @@
 #ifndef HTU21D_H
 #define HTU21D_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <proto.h>
 
 #define HTU21D_I2C_ADDRESS                      0x40
 
@@ -15,8 +14,8 @@
 #define HTU21D_SOFT_RESET                       0xfe
 
 #define HTU21D_RESET_TIMEOUT    50
-#define HTU21D_MEASURE_TIMEOUT  100
-#define HTU21D_CONFIG_TIMEOUT   200
+#define HTU21D_MEASURE_TIMEOUT  200
+#define HTU21D_CONFIG_TIMEOUT   100
 
 /* User Register
 Bit 0,7   : Measurement Resolution

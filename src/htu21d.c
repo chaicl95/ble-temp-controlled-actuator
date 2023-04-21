@@ -1,6 +1,4 @@
-#include <math.h>
 #include <htu21d.h>
-#include <driver/i2c.h>
 
 void htu21d_reset() {
     uint8_t wr_buf = HTU21D_SOFT_RESET;
@@ -25,7 +23,7 @@ float htu21d_read_rh() {
         HTU21D_MEASURE_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return NAN;
-    
+    vTaskDelay(HTU21D_MEASURE_TIMEOUT / portTICK_PERIOD_MS);
     ret = i2c_master_read_from_device(
         I2C_NUM_0,
         HTU21D_I2C_ADDRESS,
@@ -34,7 +32,6 @@ float htu21d_read_rh() {
         HTU21D_MEASURE_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return NAN;
-
     uint16_t raw_rh = rd_buf[0] << 8;
     raw_rh |= rd_buf[1];
     raw_rh ^= 0x02;
@@ -53,7 +50,8 @@ float htu21d_read_temp() {
         HTU21D_MEASURE_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return NAN;
-    
+    ESP_LOGD("HTU21D_Temp_Read","Write Successful to HTU21D");
+    vTaskDelay(HTU21D_MEASURE_TIMEOUT / portTICK_PERIOD_MS);
     ret = i2c_master_read_from_device(
         I2C_NUM_0,
         HTU21D_I2C_ADDRESS,
@@ -62,6 +60,7 @@ float htu21d_read_temp() {
         HTU21D_MEASURE_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return NAN;
+    ESP_LOGD("HTU21D_Temp_Read","Read Successful to HTU21D");
 
     uint16_t raw_temp = rd_buf[0] << 8;
     raw_temp |= rd_buf[1];
@@ -81,7 +80,7 @@ uint8_t htu21d_read_resolution() {
         HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return 0xff;
-    
+    vTaskDelay(HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS);
     ret = i2c_master_read_from_device(
         I2C_NUM_0,
         HTU21D_I2C_ADDRESS,
@@ -106,7 +105,7 @@ uint8_t htu21d_read_heater() {
         HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return 0xff;
-    
+    vTaskDelay(HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS);
     ret = i2c_master_read_from_device(
         I2C_NUM_0,
         HTU21D_I2C_ADDRESS,
@@ -131,7 +130,7 @@ uint8_t htu21d_set_resolution(htu21d_measure_res_t res) {
         HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return 0xff;
-    
+    vTaskDelay(HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS);
     ret = i2c_master_read_from_device(
         I2C_NUM_0,
         HTU21D_I2C_ADDRESS,
@@ -166,7 +165,7 @@ uint8_t htu21d_set_heater(bool enable) {
         HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS
     );
     if (ret != ESP_OK) return 0xff;
-    
+    vTaskDelay(HTU21D_CONFIG_TIMEOUT / portTICK_PERIOD_MS);
     ret = i2c_master_read_from_device(
         I2C_NUM_0,
         HTU21D_I2C_ADDRESS,

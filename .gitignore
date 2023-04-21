@@ -2,6 +2,7 @@
 .vscode
 
 *.esp32dev
+*.esp32dev.old
 
 # Prerequisites
 *.d
