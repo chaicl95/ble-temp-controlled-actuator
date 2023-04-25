@@ -1,7 +1,13 @@
 #ifndef PID_CONTROL_H
 #define PID_CONTROL_H
 
-typedef struct {
+#include <esp_log.h>
+#include <math.h>
+
+#define INTEGRAL_MAXLIMIT  1e+38
+#define INTEGRAL_MINLIMIT  -1e+38
+
+typedef struct pid_control{
     float proportional;
     float integrator;
     float differentiator;
