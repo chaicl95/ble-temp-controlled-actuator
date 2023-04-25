@@ -18,6 +18,13 @@ static int gatt_svc_access_envs(
     void *arg
 );
 
+static int gatt_svc_access_autoio(
+    uint16_t conn_handle, 
+    uint16_t attr_handle,
+    struct ble_gatt_access_ctxt *ctxt,
+    void *arg
+);
+
 static int gatt_svc_access_device_info(
     uint16_t conn_handle, 
     uint16_t attr_handle,
@@ -57,7 +64,7 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
         { 
             {
                 .uuid = BLE_UUID16_DECLARE(GATT_CHR_TEMP_UUID),
-                .access_cb = gatt_svc_access_envs,
+                .access_cb = gatt_svc_access_autoio,
                 .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
                 .val_handle = &target_temp_val_handle
             },
@@ -113,6 +120,44 @@ static int gatt_svc_access_envs(
         ret = os_mbuf_append(ctxt->om, &conv_rh, sizeof(conv_rh));
         return ret == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
     }
+    assert(0);
+    return BLE_ATT_ERR_UNLIKELY;
+}
+
+static int gatt_svc_access_autoio(
+    uint16_t conn_handle, 
+    uint16_t attr_handle,
+    struct ble_gatt_access_ctxt *ctxt,
+    void *arg
+) {
+    uint16_t uuid;
+    int ret;
+
+    uuid = ble_uuid_u16(ctxt->chr->uuid);
+    if(uuid == GATT_CHR_TEMP_UUID) {
+        switch (ctxt->op) {
+            case BLE_GATT_ACCESS_OP_READ_CHR:
+                int16_t conv_temp = (int16_t)(target_temp / (1 * pow(10 ,-2) * pow(2, 0)));
+                ret = os_mbuf_append(ctxt->om, &conv_temp, sizeof(conv_temp));
+                return ret == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
+                goto unknown;
+            case BLE_GATT_ACCESS_OP_WRITE_CHR:
+                int16_t raw_target_temp;
+                ret = gatt_svr_write(
+                    ctxt->om, 
+                    sizeof(raw_target_temp),
+                    sizeof(raw_target_temp),
+                    &raw_target_temp, NULL);
+                target_temp = (float)(raw_target_temp * (1 * pow(10, -2) * pow(2, 0)));
+                ble_gatts_chr_updated(attr_handle);
+                return ret == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
+                goto unknown;
+            default:
+                assert(0);
+                return BLE_ATT_ERR_UNLIKELY;
+        }
+    }
+    unknown:
     assert(0);
     return BLE_ATT_ERR_UNLIKELY;
 }
@@ -194,6 +239,24 @@ int gatt_svr_init(void)
     return 0;
 }
 
+int gatt_svr_write(struct os_mbuf *om, uint16_t min_len, uint16_t max_len, void *dst, uint16_t *len)
+{
+    uint16_t om_len;
+    int rc;
+
+    om_len = OS_MBUF_PKTLEN(om);
+    if (om_len < min_len || om_len > max_len) {
+        return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
+    }
+
+    rc = ble_hs_mbuf_to_flat(om, dst, max_len, len);
+    if (rc != 0) {
+        return BLE_ATT_ERR_UNLIKELY;
+    }
+
+    return 0;
+}
+
 int ble_gap_event_func(struct ble_gap_event *event, void *arg) {
     switch (event->type) {
         case BLE_GAP_EVENT_CONNECT:
@@ -233,7 +296,7 @@ int ble_gap_event_func(struct ble_gap_event *event, void *arg) {
                 event->subscribe.attr_handle
             );
             notify_state = event->subscribe.cur_notify;
-            ESP_LOGI("BLE_GAP_SUBSCRIBE_EVENT", "conn_handle from subscribe=%d", conn_handle);
+            ESP_LOGD("BLE_GAP_SUBSCRIBE_EVENT", "conn_handle from subscribe=%d", conn_handle);
             break;
 
         case BLE_GAP_EVENT_MTU:

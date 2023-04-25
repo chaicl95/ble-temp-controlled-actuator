@@ -57,11 +57,15 @@ static void servo_cntrl_loop(void *pvParameter) {
         .sampling_time_ms = 500
     };
     while (true) {
+        vTaskDelay(pid.sampling_time_ms / portTICK_PERIOD_MS);
+        if (target_temp == NAN || curr_temp == NAN) {
+            continue;
+        } 
         output = pid_compute(&pid, &curr_temp, &target_temp);
         output = pid_process_output(&pid, output);
+        percent_angle = output;
         angle = (int) output * SERVO_MAX_DEGREE / 100;
         ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(mcpwm_cmpr, angle_to_compare(angle)));
-        vTaskDelay(pid.sampling_time_ms / portTICK_PERIOD_MS);
     }
 }
 
@@ -77,7 +81,6 @@ static void env_sensing_loop(void *pvParameter) {
         if (rd_rh != NAN) {
             curr_rh = rd_rh;
         }
-        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
@@ -87,13 +90,14 @@ static void ble_notify_loop(void *pvParameter) {
         int16_t conv_temp = (int16_t)(curr_temp / (1 * pow(10, -2) * pow(2, 0))); // R = C * M * 10 ^ d * 2 ^ b
         om = ble_hs_mbuf_from_flat(&conv_temp, sizeof(conv_temp));
         ble_gatts_notify_custom(conn_handle, temp_val_handle, om);
-        conv_temp = (int16_t)(target_temp / (1 * pow(10, -2) * pow(2, 0)));
+        conv_temp = (int16_t)(target_temp / (1 * pow(10, -2) * pow(2, 0))); // R = C * M * 10 ^ d * 2 ^ b
         om = ble_hs_mbuf_from_flat(&conv_temp, sizeof(conv_temp));
         ble_gatts_notify_custom(conn_handle, target_temp_val_handle, om);
         uint16_t conv_rh = (uint16_t)(curr_rh / (1 * pow(10, -2) * pow(2, 0)));
         om = ble_hs_mbuf_from_flat(&conv_rh, sizeof(conv_rh));
         ble_gatts_notify_custom(conn_handle, rh_val_handle, om);
         ESP_LOGI("SERVO", "Current Angle : %.2f", percent_angle);
+        ESP_LOGI("SERVO", "Target Temperature : %.2f", target_temp);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }
@@ -129,7 +133,7 @@ void app_main(void)
 
 
     xTaskCreate(&env_sensing_loop, "env_sensing_loop", 2048, NULL, 5, NULL);
-    xTaskCreate(&ble_notify_loop, "ble_notify_loop", 2048, NULL, 5, NULL);
+    xTaskCreate(&ble_notify_loop, "ble_notify_loop", 4096, NULL, 5, NULL);
     xTaskCreate(&servo_cntrl_loop, "servo_cntrl_loop", 2048, NULL, 5, NULL);
 
     rc = gatt_svr_init();

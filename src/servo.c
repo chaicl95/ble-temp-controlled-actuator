@@ -29,13 +29,13 @@ void pwm_init(void) {
     ESP_ERROR_CHECK(mcpwm_new_generator(mcpwm_oper, &mcpwm_gen_config, &mcpwm_gen));
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(mcpwm_cmpr, angle_to_compare(0)));
     // go high on counter empty
-    ESP_ERROR_CHECK(
-        mcpwm_generator_set_actions_on_timer_event(
-            mcpwm_gen, MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
+    //ESP_ERROR_CHECK(
+    //    mcpwm_generator_set_actions_on_timer_event(
+    //        mcpwm_gen, MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
     // go low on compare threshold
-    ESP_ERROR_CHECK(
-        mcpwm_generator_set_actions_on_compare_event(
-            mcpwm_gen, MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, mcpwm_cmpr, MCPWM_GEN_ACTION_LOW)));
+    //ESP_ERROR_CHECK(
+    //    mcpwm_generator_set_actions_on_compare_event(
+    //        mcpwm_gen, MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, mcpwm_cmpr, MCPWM_GEN_ACTION_LOW)));
     ESP_ERROR_CHECK(mcpwm_timer_enable(mcpwm_timer));
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(mcpwm_timer, MCPWM_TIMER_START_NO_STOP));
 }
